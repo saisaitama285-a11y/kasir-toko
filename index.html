@@ -10,22 +10,92 @@
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
-    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; overflow-x: hidden; }
+        .print-only { display: none; }
+        @media print { .no-print { display: none !important; } .print-only { display: block !important; } body { background: white; } }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .theme-spv .nav-btn-active { background-color: #4f46e5 !important; color: white !important; }
+        .theme-kasir .nav-btn-active { background-color: #2563eb !important; color: white !important; }
+        @media (min-width: 1024px) and (orientation: landscape) { .pos-grid { height: calc(100vh - 160px); } .sticky-cart { height: calc(100vh - 120px); position: sticky; top: 100px; } }
+        .payment-opt-active { border-color: #2563eb !important; background-color: #eff6ff !important; color: #2563eb !important; }
+    </style>
 </head>
 <body class="bg-slate-50 min-h-screen transition-colors duration-500">
 
     <div id="login-screen" class="fixed inset-0 bg-slate-900 flex items-center justify-center z-50 p-4">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md">
+            <div class="text-center mb-8">
+                <div class="bg-blue-100 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 rotate-3">
+                    <i data-lucide="zap" class="text-blue-600 w-8 h-8 fill-blue-600"></i>
+                </div>
+                <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">KasirFast Pro</h1>
+                <p class="text-slate-500 text-xs mt-2 font-medium uppercase tracking-widest">Login Outlet & SPV</p>
+            </div>
+            <div class="space-y-4">
+                <div class="relative">
+                    <i data-lucide="key" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                    <input type="password" id="token-input" placeholder="Masukkan Token" class="w-full pl-11 pr-4 py-4 border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold tracking-widest uppercase text-center">
+                </div>
+                <button id="login-btn" onclick="handleLogin()" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-black transition-all transform active:scale-95 shadow-lg flex items-center justify-center gap-2">Masuk Dashboard</button>
+            </div>
+            <div id="login-error" class="mt-4 p-3 bg-red-50 text-red-600 text-xs rounded-xl hidden border border-red-100 font-bold text-center"></div>
         </div>
+    </div>
 
     <div id="main-app" class="hidden">
+        <nav class="bg-white border-b border-slate-200 sticky top-0 z-40 no-print shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 h-16 sm:h-20 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div id="brand-icon" class="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-600">
+                        <i data-lucide="store" class="text-white w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <span class="font-black text-lg text-slate-900 block leading-none" id="header-outlet-name">KasirFast</span>
+                        <span id="role-text" class="text-[9px] uppercase font-bold tracking-widest text-slate-400"></span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="text-right">
+                        <span id="user-display" class="block text-sm font-bold text-slate-800"></span>
+                        <span id="status-online" class="text-[9px] text-green-500 font-black flex items-center gap-1 justify-end">
+                            <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> ONLINE
+                        </span>
+                    </div>
+                    <button onclick="logout()" class="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all">
+                        <i data-lucide="log-out" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+        <div class="max-w-7xl mx-auto px-4 py-6 no-print">
+            <div class="flex gap-2 mb-6 overflow-x-auto pb-2 custom-scrollbar no-print" id="nav-tabs"></div>
+            <div id="content-area"></div>
         </div>
+    </div>
 
     <div id="receipt-modal" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center z-50 no-print p-4 backdrop-blur-sm">
+        <div class="bg-white p-6 rounded-3xl w-full max-w-sm shadow-2xl overflow-y-auto max-h-[90vh] animate-fadeIn">
+            <div id="receipt-content" class="text-xs font-mono leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100"></div>
+            <div class="mt-6 flex flex-col gap-2">
+                <button id="copy-text-btn" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-700 transition">
+                    <i data-lucide="copy" class="w-4 h-4"></i> Salin Struk
+                </button>
+                <button onclick="window.print()" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-black transition">
+                    <i data-lucide="printer" class="w-4 h-4"></i> Cetak
+                </button>
+                <button onclick="closeReceipt()" class="w-full bg-slate-100 text-slate-600 py-3 rounded-2xl font-bold hover:bg-slate-200 transition">Tutup</button>
+            </div>
         </div>
+    </div>
 
     <script src="assets/js/config.js"></script>
-    <script src="assets/js/services.js"></script>
     <script src="assets/js/ui.js"></script>
+    <script src="assets/js/services.js"></script>
     <script src="assets/js/app.js"></script>
 </body>
 </html>
